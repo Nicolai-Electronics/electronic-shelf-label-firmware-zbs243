@@ -27,7 +27,7 @@
 
                                                     //     7766554433221100
                                                     //         AABB  CC  DD     AA.BB.CC.DD
-static const uint64_t __code VERSIONMARKER mVersionRom = 0x0000010000010003ull; // 1.0.1.3
+static const uint64_t __code VERSIONMARKER mVersionRom = 0x0000010000010004ull; // 1.0.1.4
 
 static uint64_t __xdata mVersion;
 static uint8_t __xdata mRxBuf[COMMS_MAX_PACKET_SZ];
@@ -305,12 +305,9 @@ static uint32_t uiNotPaired(void)
         if (eci.numValidImages)
         {
             set_offline(1);
-            drawImageAtAddress(EEPROM_IMG_START + (mathPrvMul32x8(EEPROM_IMG_EACH >> 8, eci.latestImgIdx) << 8));
-        }
-        else
-        {
+            //drawImageAtAddress(EEPROM_IMG_START + (mathPrvMul32x8(EEPROM_IMG_EACH >> 8, eci.latestImgIdx) << 8));
+        } else {
             eepromDeepPowerDown();
-            drawFullscreenMsg((const __xdata char *)"Connecting...");
         }
         wdtDeviceReset();
     }
@@ -521,77 +518,6 @@ static void prvApplyUpdateIfNeeded(void)
 static void prvProgressBar(uint16_t done, uint16_t outOf, uint16_t __xdata *prevStateP)
 {
 
-#if defined(SCREEN_PARTIAL_W2B) && defined(SCREEN_PARTIAL_B2W) && defined(SCREEN_PARTIAL_KEEP)
-
-    uint16_t now = mathPrvDiv32x16(mathPrvMul16x16(done, SCREEN_WIDTH * SCREEN_TX_BPP / 8) + (outOf / 2), outOf); // in bytes
-    __bit blacken, redraw = false;
-    uint16_t i, j, min, max;
-    uint8_t iteration;
-
-    if (*prevStateP == 0xffff)
-    {
-        redraw = true;
-    }
-    if (now < *prevStateP)
-    {
-        min = now;
-        max = *prevStateP;
-        blacken = false;
-    }
-    else if (now == *prevStateP)
-    {
-
-        return;
-    }
-    else
-    {
-        blacken = true;
-        min = *prevStateP;
-        max = now;
-    }
-    *prevStateP = now;
-
-    if (!screenTxStart(true))
-        return;
-
-    for (iteration = 0; iteration < SCREEN_DATA_PASSES; iteration++)
-    {
-
-        if (redraw)
-        {
-            for (i = 0; i < now; i++)
-                screenByteTx(SCREEN_PARTIAL_W2B);
-            for (; i < SCREEN_WIDTH * SCREEN_TX_BPP / 8; i++)
-                screenByteTx(SCREEN_PARTIAL_B2W);
-            for (i = 0; i < SCREEN_WIDTH * SCREEN_TX_BPP / 8; i++)
-                screenByteTx(SCREEN_PARTIAL_B2W);
-        }
-        else
-        {
-            for (i = 0; i < min; i++)
-                screenByteTx(SCREEN_PARTIAL_KEEP);
-            for (; i < max; i++)
-                screenByteTx(blacken ? SCREEN_PARTIAL_W2B : SCREEN_PARTIAL_B2W);
-            for (; i < SCREEN_WIDTH * SCREEN_TX_BPP / 8; i++)
-                screenByteTx(SCREEN_PARTIAL_KEEP);
-            for (i = 0; i < SCREEN_WIDTH * SCREEN_TX_BPP / 8; i++)
-                screenByteTx(SCREEN_PARTIAL_KEEP);
-        }
-
-        // fill rest
-        for (j = 0; j < SCREEN_HEIGHT - 2; j++)
-        {
-            for (i = 0; i < SCREEN_WIDTH * SCREEN_TX_BPP / 8; i++)
-                screenByteTx(SCREEN_PARTIAL_KEEP);
-        }
-
-        screenEndPass();
-    }
-    screenTxEnd();
-
-#elif defined(SCREEN_PARTIAL_W2B) || defined(SCREEN_PARTIAL_B2W) || defined(SCREEN_PARTIAL_KEEP)
-#error "some but not all partial defines found - this is an error"
-#endif
 }
 
 static uint32_t prvDriveDownload(struct EepromImageHeader __xdata *eih, uint32_t addr, __bit isOS)
